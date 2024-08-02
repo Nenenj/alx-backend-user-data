@@ -10,7 +10,7 @@ from os import environ
 import mysql.connector
 
 
-# PII fields to be redacted
+# # PII fields to be redacted
 PII_FIELDS = ("name", "email", "phone", "ssn", "password")
 
 
@@ -29,12 +29,15 @@ def filter_datum(fields: List[str], redaction: str,
     Returns:
         The filtered string message with redacted values
     """
-    pattern = f"({'|'.join(map(re.escape, fields))})=.*?{re.escape(separator)}"
-    return re.sub(pattern, lambda m: f"{m.group(1)}={redaction}{separator}", message)
+    for f in fields:
+        message = re.sub(f'{f}=.*?{separator}',
+                         f'{f}={redaction}{separator}', message)
+    return message
 
 
 def get_logger() -> logging.Logger:
-    """Returns a Logger object for handling Personal Data
+    """
+    Returns a Logger object for handling Personal Data
 
     Returns:
         A Logger object with INFO log level and RedactingFormatter
@@ -111,7 +114,9 @@ class RedactingFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         """
-        Formats the specified log record as text. Filters values in incoming log records using filter_datum.
+        Formats the specified log record as text.
+
+        Filters values in incoming log records using filter_datum.
         """
         record.msg = filter_datum(self.fields, self.REDACTION,
                                   record.getMessage(), self.SEPARATOR)
